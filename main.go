@@ -5,8 +5,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/cbergoon/load-balancer/proxy"
-	"github.com/cbergoon/load-balancer/registry"
+	"github.com/cbergoon/glb/proxy"
+	"github.com/cbergoon/glb/registry"
 )
 
 // ServiceRegistry is a local registry of services/versions

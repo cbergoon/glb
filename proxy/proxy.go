@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
-	"github.com/cbergoon/load-balancer/registry"
+	"github.com/cbergoon/glb/registry"
 )
 
 var (
