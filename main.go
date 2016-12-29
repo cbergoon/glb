@@ -13,8 +13,8 @@ import (
 var ServiceRegistry = registry.DefaultRegistry{
 	"service1": {
 		"v1": {
-			"localhost:9091",
-			"localhost:9092",
+			"138.197.25.178:9091",
+			"138.197.21.197:9092",
 		},
 	},
 }
@@ -22,7 +22,7 @@ var ServiceRegistry = registry.DefaultRegistry{
 func runLoadBalancer() {
 	go http.ListenAndServe(":8080", http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		http.Redirect(w, req,
-			"https://localhost:8443"+req.URL.String(),
+			"https://45.55.213.70:8443"+req.URL.String(),
 			http.StatusMovedPermanently)
 	}))
 
