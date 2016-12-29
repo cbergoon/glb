@@ -9,7 +9,6 @@ import (
 	"github.com/cbergoon/glb/registry"
 )
 
-// ServiceRegistry is a local registry of services/versions
 var ServiceRegistry = registry.DefaultRegistry{
 	"service1": {
 		"v1": {
