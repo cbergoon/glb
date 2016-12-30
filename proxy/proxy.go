@@ -3,17 +3,17 @@ package proxy
 import (
 	"errors"
 	"fmt"
+	"github.com/cbergoon/glb/registry"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"strings"
 	"time"
-	"github.com/cbergoon/glb/registry"
 )
 
 var (
-	ErrInvalidService = errors.New("invalid service/version")
+	ErrInvalidService      = errors.New("invalid service/version")
 	roundRobbinCounter int = 0
 )
 
@@ -64,10 +64,11 @@ func resolveValid(network, serviceName, serviceVersion string, reg registry.Regi
 	return nil, fmt.Errorf("No endpoint available for %s/%s", serviceName, serviceVersion)
 }
 
-func NewMultipleHostReverseProxy(reg registry.Registry) http.HandlerFunc {
+func NewMultipleHostReverseProxy(reg registry.Registry, basic *bool, idleConTimeout *int, disableKeepAlive *bool) http.HandlerFunc {
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		Dial: func(network, addr string) (net.Conn, error) {
+			fmt.Println("In Dail")
 			addr = strings.Split(addr, ":")[0]
 			tmp := strings.Split(addr, "/")
 			if len(tmp) != 2 {
@@ -76,12 +77,22 @@ func NewMultipleHostReverseProxy(reg registry.Registry) http.HandlerFunc {
 			return ResolveValid(network, tmp[0], tmp[1], reg)
 		},
 		TLSHandshakeTimeout: 10 * time.Second,
+		IdleConnTimeout:     time.Duration(*idleConTimeout) * time.Second,
+		DisableKeepAlives:   *disableKeepAlive,
 	}
 	return func(w http.ResponseWriter, req *http.Request) {
-		name, version, err := ExtractNameVersion(req.URL)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+		var name, version string
+		var err error
+		if !(*basic) {
+			name, version, err = ExtractNameVersion(req.URL)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+		if *basic {
+			name = "default"
+			version = "default"
 		}
 		(&httputil.ReverseProxy{
 			Director: func(req *http.Request) {
