@@ -8,6 +8,12 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"log"
+)
+
+var (
+	ErrFailedToParse    = errors.New("proxy-config: failed to parse configuration")
+	ErrFailedToReadFile = errors.New("proxy-config: failed to read configuration file")
 )
 
 type ProxyConfig struct {
@@ -31,15 +37,22 @@ const (
 func ReadParseConfig() (ProxyConfig, error) {
 	data, err := readConfig()
 	if err != nil {
+		log.Print(err)
 		os.Exit(-1)
 	}
 	config, err := parseConfig(bytes.NewReader(data))
-	return config, err
+	if err != nil {
+		return config, ErrFailedToParse
+	}
+	return config, nil
 }
 
 func readConfig() ([]byte, error) {
 	data, err := ioutil.ReadFile(ConfigFile)
-	return data, err
+	if err != nil {
+		return nil, ErrFailedToReadFile
+	}
+	return data, nil
 }
 
 func parseConfig(jsonStream io.Reader) (ProxyConfig, error) {
@@ -49,9 +62,10 @@ func parseConfig(jsonStream io.Reader) (ProxyConfig, error) {
 		if err := dec.Decode(&p); err == io.EOF {
 			break
 		} else if err != nil {
-			return p, errors.New("proxy-config: failed to parse configuration")
+			return p, ErrFailedToParse
 		}
 
 	}
 	return p, nil
 }
+
