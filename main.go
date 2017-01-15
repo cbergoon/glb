@@ -16,14 +16,15 @@ var BasicProxy bool = false
 var IdleConnTimeoutSeconds int = 1
 var DisableKeepAlives bool = false
 
-
 func runLoadBalancer(addr, port, sslPort string) {
+
 	//Redirect to HTTPS
 	go http.ListenAndServe(port, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		http.Redirect(w, req,
 			"https://"+addr+sslPort+req.URL.String(),
 			http.StatusMovedPermanently)
 	}))
+
 	//Service Endpoints
 	http.HandleFunc("/status", func(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(w, "%v\n", *ServiceRegistry)
@@ -31,6 +32,7 @@ func runLoadBalancer(addr, port, sslPort string) {
 	http.HandleFunc("/reload", func(w http.ResponseWriter, req *http.Request) {
 		config, err := ReadParseConfig()
 		if err != nil {
+			log.Print(err)
 			os.Exit(-1)
 		}
 		*ServiceRegistry = config.Registry
@@ -39,6 +41,7 @@ func runLoadBalancer(addr, port, sslPort string) {
 		DisableKeepAlives = config.DisableKeepAlives
 		fmt.Fprintf(w, "%v\n", *ServiceRegistry)
 	})
+
 	//Proxy Endpoint
 	http.HandleFunc("/", proxy.NewMultipleHostReverseProxy(ServiceRegistry, &BasicProxy, &IdleConnTimeoutSeconds, &DisableKeepAlives))
 
@@ -49,6 +52,7 @@ func main() {
 	//Configure
 	config, err := ReadParseConfig()
 	if err != nil {
+		log.Print(err)
 		os.Exit(-1)
 	}
 	*ServiceRegistry = config.Registry
