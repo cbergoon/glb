@@ -2,31 +2,23 @@ package registry
 
 import (
 	"errors"
-	"log"
 	"sync"
 )
 
 var lock sync.RWMutex
 
 var (
-	ErrServiceNotFound = errors.New("service name/version not found")
+	ErrServiceNotFound = errors.New("registry: target name/version not found")
+	ErrServiceNameNotAllowed = errors.New("registry: service name not allowed; non-allowable service names [reload|status]")
 )
 
 type Registry interface {
 	Add(name, version, endpoint string)
 	Delete(name, version, endpoint string)
-	Failure(name, version, endpoint string, err error)
 	Lookup(name, version string) ([]string, error)
+	Validate() error
 }
 
-// {
-//   "serviceName": {
-//     "serviceVersion": [
-//       "endpoint1:port",
-//       "endpoint2:port"
-//     ],
-//   },
-// }
 type DefaultRegistry map[string]map[string][]string
 
 func (r DefaultRegistry) Lookup(name, version string) ([]string, error) {
@@ -37,10 +29,6 @@ func (r DefaultRegistry) Lookup(name, version string) ([]string, error) {
 		return nil, ErrServiceNotFound
 	}
 	return targets, nil
-}
-
-func (r DefaultRegistry) Failure(name, version, endpoint string, err error) {
-	log.Printf("Error accessing %s/%s (%s): %s", name, version, endpoint, err)
 }
 
 func (r DefaultRegistry) Add(name, version, endpoint string) {
@@ -72,4 +60,16 @@ begin:
 			goto begin
 		}
 	}
+}
+
+func (r DefaultRegistry) Validate() error {
+	_, ok := r["reload"]
+	if ok {
+		return ErrServiceNameNotAllowed
+	}
+	_, ok = r["status"]
+	if ok {
+		return ErrServiceNameNotAllowed
+	}
+	return nil
 }
