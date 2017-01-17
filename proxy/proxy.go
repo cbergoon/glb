@@ -16,12 +16,16 @@ import (
 var (
 	ErrInvalidTarget       = errors.New("proxy: invalid service/version")
 	ErrInvalidPath         = errors.New("proxy: invalid path to resource")
-	roundRobbinCounter int = 0
+	//Todo: Move to registry to allow predictable balancing when multiple
+	//Todo: service/version combinations are present.
+	roundRobbinCounter int = 0 //Index for current round-robbin address.
 )
 
 var ParseTarget = parseTarget
 var DialTarget = dialTarget
 
+//Extracts the service name and version from the URL provided. Returns ErrInvalidPath if
+//the service and/or version are missing from the URL provided.
 func parseTarget(target *url.URL) (name, version string, err error) {
 	path := target.Path
 	if len(path) > 1 && path[0] == '/' {
@@ -37,6 +41,11 @@ func parseTarget(target *url.URL) (name, version string, err error) {
 	return name, version, nil
 }
 
+//Establishes the network connection to appropriate address that is determined by the service and version.
+//Executes a look up with the registry based on the parameters service and version. If a connection is not
+//able to be established to any of the available addresses, an error is returned detailing the failure.
+//Note that this function may or may not be called at deterministic intervals depending on the configuration,
+//request volume and, load balancer settings.
 func dialTarget(network, serviceName, serviceVersion string, reg registry.Registry) (net.Conn, error) {
 	endpoints, err := reg.Lookup(serviceName, serviceVersion)
 	if err != nil {
@@ -69,6 +78,10 @@ func dialTarget(network, serviceName, serviceVersion string, reg registry.Regist
 	return nil, e
 }
 
+//Creates a new reverse proxy that represents the configuration specified. This is done by
+//creating a new http.Transport object that utilizes configuration passed in the dial
+//function defined above. A http.Handler function is returned which will complete the proxy
+//loop when invoked.
 func NewMultipleHostReverseProxy(reg registry.Registry, basic *bool, idleConTimeout *int, disableKeepAlive *bool) http.HandlerFunc {
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
