@@ -7,8 +7,8 @@ import (
 	"github.com/cbergoon/glb/registry"
 	"io"
 	"io/ioutil"
-	"os"
 	"log"
+	"os"
 )
 
 var (
@@ -30,12 +30,8 @@ type Provider struct {
 	SslPort string
 }
 
-const (
-	ConfigFile string = "glb.conf"
-)
-
-func ReadParseConfig() (ProxyConfig, error) {
-	data, err := readConfig()
+func ReadParseConfig(configFile string) (ProxyConfig, error) {
+	data, err := readConfig(configFile)
 	if err != nil {
 		log.Print(err)
 		os.Exit(-1)
@@ -47,8 +43,8 @@ func ReadParseConfig() (ProxyConfig, error) {
 	return config, nil
 }
 
-func readConfig() ([]byte, error) {
-	data, err := ioutil.ReadFile(ConfigFile)
+func readConfig(configFile string) ([]byte, error) {
+	data, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		return nil, ErrFailedToReadFile
 	}
@@ -68,4 +64,3 @@ func parseConfig(jsonStream io.Reader) (ProxyConfig, error) {
 	}
 	return p, nil
 }
-
