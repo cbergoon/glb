@@ -26,11 +26,14 @@ var DisableKeepAlives bool = false //Do not keep alive, reconnect on each reques
 func runLoadBalancer(addr, port, sslPort string) {
 	//Redirect to HTTPS
 	if sslPort != "" {
+		log.Print("HTTPS config specified; starting HTTP redirect server.")
 		go http.ListenAndServe(port, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			http.Redirect(w, req,
 				"https://"+addr+sslPort+req.URL.String(),
 				http.StatusMovedPermanently)
 		}))
+	}else{
+		log.Print("HTTP only config specified; not starting HTTP redirect server.")
 	}
 	//GLB Service Endpoints
 	http.HandleFunc("/status", func(w http.ResponseWriter, req *http.Request) {
@@ -51,12 +54,16 @@ func runLoadBalancer(addr, port, sslPort string) {
 	//Proxy Endpoint
 	http.HandleFunc("/", proxy.NewMultipleHostReverseProxy(ServiceRegistry, &BasicProxy, &IdleConnTimeoutSeconds, &DisableKeepAlives))
 	if sslPort != "" {
+		log.Print("HTTPS config specified; listen and serve HTTPS")
+		log.Print("Using Certificate File: ", CERT_FILE, " and Key File: ", KEY_FILE)
 		log.Fatal(http.ListenAndServeTLS(sslPort, CERT_FILE, KEY_FILE, nil))
 	}else{
+		log.Print("HTTP only config specified; listen and serve HTTP")
 		log.Fatal(http.ListenAndServe(sslPort, nil))
 	}
 }
 
+//Application entry point gets configuration and starts the load balancer.
 func main() {
 	//Configure
 	config, err := ReadParseConfig(CONFIG_FILE)
