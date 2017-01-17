@@ -30,7 +30,7 @@ func runLoadBalancer(addr, port, sslPort string) {
 		fmt.Fprintf(w, "%v\n", *ServiceRegistry)
 	})
 	http.HandleFunc("/reload", func(w http.ResponseWriter, req *http.Request) {
-		config, err := ReadParseConfig()
+		config, err := ReadParseConfig("glb.conf")
 		if err != nil {
 			log.Print(err)
 			os.Exit(-1)
@@ -50,7 +50,7 @@ func runLoadBalancer(addr, port, sslPort string) {
 
 func main() {
 	//Configure
-	config, err := ReadParseConfig()
+	config, err := ReadParseConfig("glb.conf")
 	if err != nil {
 		log.Print(err)
 		os.Exit(-1)
