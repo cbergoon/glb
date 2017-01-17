@@ -1,4 +1,8 @@
 ### glb
-Load Balancer in Go that uses a reverse proxy. 
+A configurable Round Robbin Load Balancer/Reverse proxy written in Go.
+ 
+#### Configuration File
+
+#### 
 
 
