@@ -8,7 +8,7 @@ import (
 var lock sync.RWMutex
 
 var (
-	ErrServiceNotFound = errors.New("registry: target name/version not found")
+	ErrServiceNotFound       = errors.New("registry: target name/version not found")
 	ErrServiceNameNotAllowed = errors.New("registry: service name not allowed; non-allowable service names [reload|status]")
 )
 
@@ -25,7 +25,7 @@ func (r DefaultRegistry) Lookup(name, version string) ([]string, error) {
 	lock.RLock()
 	targets, ok := r[name][version]
 	lock.RUnlock()
-	if !ok {
+	if !ok || len(targets) == 0 {
 		return nil, ErrServiceNotFound
 	}
 	return targets, nil
