@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "Basic": {
+      "type": "boolean"
+    },
+    "DisableKeepAlives": {
+      "type": "boolean"
+    },
+    "IdleConnTimeoutSeconds": {
+      "type": "integer"
+    },
+    "Host": {
+      "type": "object",
+      "properties": {
+        "Addr": {
+          "type": "string"
+        },
+        "Port": {
+          "type": "string"
+        },
+        "SslPort": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "Addr",
+        "Port",
+        "SslPort"
+      ]
+    },
+    "Registry": {
+      "type": "object",
+      "properties": {
+        "s1": {
+          "type": "object",
+          "properties": {
+            "v1": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "v1"
+          ]
+        }
+      },
+      "required": [
+        "s1"
+      ]
+    }
+  },
+  "required": [
+    "Basic",
+    "DisableKeepAlives",
+    "IdleConnTimeoutSeconds",
+    "Host",
+    "Registry"
+  ]
+}
