@@ -1,9 +1,11 @@
 ### glb
 A configurable Round Robbin Load Balancer/Reverse proxy written in Go.
+
 #### Configuration File
 The configuration file should be saved in the directory of the executable as `glb.json`
 
 Document structure is defined in the `glb.schema.json` file. Below is a sample configuration. 
+
 ```json
 {
   "Basic": false,
@@ -24,6 +26,7 @@ Document structure is defined in the `glb.schema.json` file. Below is a sample c
   }
 }
 ```
+
 ##### Explanation of Fields
 * Basic determines the semantics of the registry object. If enabled only one service/version 
 paring will be available. That service must be defined with the service name of "default" and 
@@ -42,6 +45,7 @@ to be directed to a single host until the timeout or other qualifing condition i
 * Registry is the data store that handles the service/name to address mappings. this is represented 
 by a map of maps whose values are a slice of strings representing the addresses. The Keys are 
 strings of the service and version. 
+
 #### Operation and Functionality
 The load balancer mechanism's behavior will changee based on the connection settings in the config. 
 For the most part the operation is consistent with what is expected of a round robin balancer with 
@@ -54,10 +58,12 @@ arrayss containing the addresses of the appropriate service/verison mapping. No 
 the ordering of the proxy target addresses.
 
 The registry can be overridden with a struct that implements Registry.
+
 #### To Do List
-1) Multiplier on round robin counter threshhold.
+1) Multiplier on round robin counter threshold
 2) Service endpoint operations
 3) Endpoints for managing the registry
 4) Endpoint to write and reload a new configuration
+5) Service/version as header in request
 
 
