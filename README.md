@@ -60,10 +60,10 @@ the ordering of the proxy target addresses.
 The registry can be overridden with a struct that implements Registry.
 
 #### To Do List
-1) Multiplier on round robin counter threshold
-2) Service endpoint operations
-3) Endpoints for managing the registry
-4) Endpoint to write and reload a new configuration
-5) Service/version as header in request
+1. Multiplier on round robin counter threshold
+2. Service endpoint operations
+3. Endpoints for managing the registry
+4. Endpoint to write and reload a new configuration
+5. Service/version as header in request
 
 
