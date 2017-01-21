@@ -65,5 +65,6 @@ The registry can be overridden with a struct that implements Registry.
 3. Endpoints for managing the registry
 4. Endpoint to write and reload a new configuration
 5. Service/version as header in request
-
+6. Metrics of requests
+7. Option to inject header to trace requests
 
