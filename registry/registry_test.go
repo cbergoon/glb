@@ -1,12 +1,12 @@
 package registry_test
 
 import (
+	"github.com/cbergoon/glb/registry"
 	"strconv"
 	"testing"
-	"github.com/cbergoon/glb/registry"
 )
 
-var serviceRegistry = registry.DefaultRegistry{
+var serviceRegistry = registry.ServiceRegistry{
 	"service1": {
 		"v1": {
 			"localhost:8888",
@@ -142,7 +142,7 @@ func TestDelete(t *testing.T) {
 	}
 	serviceRegistry.Delete("service2", "v2", "localhost:7777")
 	addrs, err := serviceRegistry.Lookup("service2", "v2")
-	if err != nil && len(addrs) == 1{
+	if err != nil && len(addrs) == 1 {
 		t.Error("Expected ", registry.ErrServiceNotFound, " got ", err)
 	}
 	return

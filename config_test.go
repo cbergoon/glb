@@ -1,16 +1,16 @@
 package main
 
 import (
-	"testing"
-	"os"
 	"bufio"
+	"os"
+	"testing"
 )
 
 const (
-	fileNameErr = "file-error.json"
+	fileNameErr   = "file-error.json"
 	fileNameNoErr = "file-no-error.json"
-	fileErr = "{\r\n  \"Basic\": false\r\n  \"DisableKeepAlives\": false,\r\n  \"IdleConnTimeoutSeconds\": 10,\r\n  \"Host\": {\r\n    \"Addr\": \"localhost\",\r\n    \"Port\": \":9090\",\r\n    \"SslPort\": \":8443\"\r\n  },\r\n  \"Registry\": {\r\n    \"s1\": {\r\n      \"v1\": [\r\n        \"localhost:8080\",\r\n        \"localhost:8081\"\r\n      ]\r\n    }\r\n  }\r\n}"
-	fileNoErr = "{\r\n  \"Basic\": false,\r\n  \"DisableKeepAlives\": false,\r\n  \"IdleConnTimeoutSeconds\": 10,\r\n  \"Host\": {\r\n    \"Addr\": \"localhost\",\r\n    \"Port\": \":9090\",\r\n    \"SslPort\": \":8443\"\r\n  },\r\n  \"Registry\": {\r\n    \"s1\": {\r\n      \"v1\": [\r\n        \"localhost:8080\",\r\n        \"localhost:8081\"\r\n      ]\r\n    }\r\n  }\r\n}"
+	fileErr       = "{\r\n  \"Basic\": false\r\n  \"DisableKeepAlives\": false,\r\n  \"IdleConnTimeoutSeconds\": 10,\r\n  \"Host\": {\r\n    \"Addr\": \"localhost\",\r\n    \"Port\": \":9090\",\r\n    \"SslPort\": \":8443\"\r\n  },\r\n  \"Registry\": {\r\n    \"s1\": {\r\n      \"v1\": [\r\n        \"localhost:8080\",\r\n        \"localhost:8081\"\r\n      ]\r\n    }\r\n  }\r\n}"
+	fileNoErr     = "{\r\n  \"Basic\": false,\r\n  \"DisableKeepAlives\": false,\r\n  \"IdleConnTimeoutSeconds\": 10,\r\n  \"Host\": {\r\n    \"Addr\": \"localhost\",\r\n    \"Port\": \":9090\",\r\n    \"SslPort\": \":8443\"\r\n  },\r\n  \"Registry\": {\r\n    \"s1\": {\r\n      \"v1\": [\r\n        \"localhost:8080\",\r\n        \"localhost:8081\"\r\n      ]\r\n    }\r\n  }\r\n}"
 )
 
 func buildFiles() error {
@@ -96,4 +96,3 @@ func TestReadParseConfig(t *testing.T) {
 		t.Error("Could not remove files got ", err)
 	}
 }
-

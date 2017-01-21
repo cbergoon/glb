@@ -17,11 +17,11 @@ var (
 )
 
 type ProxyConfig struct {
-	Host                   Provider //GLB host descriptor.
-	Basic                  bool //Basic mode for "default" service/version.
-	DisableKeepAlives      bool //Disable keepalives causing a redial on each request.
-	IdleConnTimeoutSeconds int //Timeout idle connections after in seconds; zero means no limit.
-	Registry               registry.DefaultRegistry //Registry represented by the configuration.
+	Host                   Provider                                //GLB host descriptor.
+	Basic                  bool                                    //Basic mode for "default" service/version.
+	DisableKeepAlives      bool                                    //Disable keepalives causing a redial on each request.
+	IdleConnTimeoutSeconds int                                     //Timeout idle connections after in seconds; zero means no limit.
+	Registry               map[string]map[string][]registry.Target //Registry represented by the configuration.
 }
 
 type Provider struct {
@@ -34,7 +34,7 @@ type Provider struct {
 //object "ProxyConfig" and, returns the resulting configuration structure. Returns
 //ErrFailedToParse if the JSON could not be marshaled, exits if the file does not
 //exist.
-func ReadParseConfig(configFile string) (ProxyConfig, error) {
+func ReadParseConfig(configFile string, r registry.Registry) (ProxyConfig, error) {
 	data, err := readConfig(configFile)
 	if err != nil {
 		log.Print(err)
@@ -43,6 +43,13 @@ func ReadParseConfig(configFile string) (ProxyConfig, error) {
 	config, err := parseConfig(bytes.NewReader(data))
 	if err != nil {
 		return config, ErrFailedToParse
+	}
+	for svc := range config.Registry {
+		for key := range config.Registry[svc] {
+			for _, target := range config.Registry[svc][key] {
+				r.Add(svc, key, target)
+			}
+		}
 	}
 	return config, nil
 }

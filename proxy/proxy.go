@@ -14,11 +14,8 @@ import (
 )
 
 var (
-	ErrInvalidTarget       = errors.New("proxy: invalid service/version")
-	ErrInvalidPath         = errors.New("proxy: invalid path to resource")
-	//Todo: Move to registry to allow predictable balancing when multiple
-	//Todo: service/version combinations are present.
-	roundRobbinCounter int = 0 //Index for current round-robbin address.
+	ErrInvalidTarget = errors.New("proxy: invalid service/version")
+	ErrInvalidPath   = errors.New("proxy: invalid path to resource")
 )
 
 var ParseTarget = parseTarget
@@ -46,34 +43,42 @@ func parseTarget(target *url.URL) (name, version string, err error) {
 //able to be established to any of the available addresses, an error is returned detailing the failure.
 //Note that this function may or may not be called at deterministic intervals depending on the configuration,
 //request volume and, load balancer settings.
-func dialTarget(network, serviceName, serviceVersion string, reg registry.Registry) (net.Conn, error) {
-	endpoints, err := reg.Lookup(serviceName, serviceVersion)
+func dialTarget(network, serviceName, serviceKey string, reg registry.Registry) (net.Conn, error) {
+	localRoundRobbin, err := reg.GetRoundRobbinCounter(serviceName, serviceKey)
+	if localRoundRobbin < 0 || err != nil {
+		log.Print(err)
+		return nil, err
+	}
+	endpoints, err := reg.Lookup(serviceName, serviceKey)
 	if err != nil {
 		log.Print(err)
 		return nil, err
 	}
+
 	for {
 		if len(endpoints) == 0 {
 			break
 		}
 
-		if roundRobbinCounter >= len(endpoints) {
-			roundRobbinCounter = 0
+		if localRoundRobbin >= len(endpoints) {
+			localRoundRobbin = 0
+			reg.SetRoundRobbinCounter(serviceName, serviceKey, 0)
 		}
 
-		endpoint := endpoints[roundRobbinCounter]
+		endpoint := endpoints[localRoundRobbin].Address
 
 		conn, err := net.Dial(network, endpoint)
 		if err != nil {
-			log.Printf("proxy: error could not access %s/%s at %s", serviceName, serviceVersion, endpoint)
-			endpoints = append(endpoints[:roundRobbinCounter], endpoints[roundRobbinCounter+1:]...)
+			log.Printf("proxy: error could not access %s/%s at %s", serviceName, serviceKey, endpoint)
+			endpoints = append(endpoints[:localRoundRobbin], endpoints[localRoundRobbin+1:]...)
 			continue
 		}
 
-		roundRobbinCounter = roundRobbinCounter + 1
+		localRoundRobbin = localRoundRobbin + 1
+		reg.SetRoundRobbinCounter(serviceName, serviceKey, localRoundRobbin)
 		return conn, nil
 	}
-	e := fmt.Errorf("No endpoint available for %s/%s", serviceName, serviceVersion)
+	e := fmt.Errorf("proxy: error no endpoint available for %s/%s", serviceName, serviceKey)
 	log.Print(e)
 	return nil, e
 }
@@ -82,7 +87,7 @@ func dialTarget(network, serviceName, serviceVersion string, reg registry.Regist
 //creating a new http.Transport object that utilizes configuration passed in the dial
 //function defined above. A http.Handler function is returned which will complete the proxy
 //loop when invoked.
-func NewMultipleHostReverseProxy(reg registry.Registry, basic *bool, idleConTimeout *int, disableKeepAlive *bool) http.HandlerFunc {
+func NewLoadBalanceHostReverseProxy(reg registry.Registry, basic *bool, idleConTimeout *int, disableKeepAlive *bool) http.HandlerFunc {
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		Dial: func(network, addr string) (net.Conn, error) {
@@ -99,10 +104,10 @@ func NewMultipleHostReverseProxy(reg registry.Registry, basic *bool, idleConTime
 		DisableKeepAlives:   *disableKeepAlive,
 	}
 	return func(w http.ResponseWriter, req *http.Request) {
-		var name, version string
+		var name, key string
 		var err error
 		if !(*basic) {
-			name, version, err = ParseTarget(req.URL)
+			name, key, err = ParseTarget(req.URL)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -110,12 +115,12 @@ func NewMultipleHostReverseProxy(reg registry.Registry, basic *bool, idleConTime
 		}
 		if *basic {
 			name = "default"
-			version = "default"
+			key = "default"
 		}
 		(&httputil.ReverseProxy{
 			Director: func(req *http.Request) {
 				req.URL.Scheme = "http"
-				req.URL.Host = name + "/" + version
+				req.URL.Host = name + "/" + key
 			},
 			Transport: transport,
 		}).ServeHTTP(w, req)

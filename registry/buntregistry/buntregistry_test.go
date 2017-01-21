@@ -1,1 +1,1 @@
-package buntregistry
+package buntregistry_test

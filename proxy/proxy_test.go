@@ -1,12 +1,12 @@
 package proxy_test
 
 import (
-	"testing"
-	"github.com/cbergoon/glb/registry"
 	"github.com/cbergoon/glb/proxy"
+	"github.com/cbergoon/glb/registry"
+	"testing"
 )
 
-var serviceRegistry = registry.DefaultRegistry{
+var serviceRegistry = registry.ServiceRegistry{
 	"service1": {
 		"v1": {
 			"localhost:8888",
@@ -20,10 +20,10 @@ var serviceRegistry = registry.DefaultRegistry{
 	},
 }
 
-func TestNewMultipleHostReverseProxy(t *testing.T) {
+func TestNewLoadBalanceHostReverseProxy(t *testing.T) {
 	var FALSE = false
 	var ZERO = 0
-	handlerFunc := proxy.NewMultipleHostReverseProxy(serviceRegistry, &FALSE, &ZERO, &FALSE)
+	handlerFunc := proxy.NewLoadBalanceHostReverseProxy(serviceRegistry, &FALSE, &ZERO, &FALSE)
 	if handlerFunc == nil {
 		t.Error("Expected handler func got ", handlerFunc)
 	}
