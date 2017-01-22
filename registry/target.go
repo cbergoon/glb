@@ -7,6 +7,19 @@ type Target struct {
 	Failures int
 }
 
+func (t *Target) setAddress(address string) {
+	t.Address = address
+}
+
+func (t *Target) getAddress() string {
+	return t.Address
+}
+
+func (t *Target) incrementFailures(value int) int {
+	t.Failures += value
+	return t.Failures
+}
+
 type OrderedTargets []Target
 
 func (s OrderedTargets) Len() int {

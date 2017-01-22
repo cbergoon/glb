@@ -2,68 +2,152 @@ package serviceregistry
 
 import (
 	"github.com/cbergoon/glb/registry"
-	"sort"
-	"strings"
 	"sync"
 )
 
-//var lock sync.RWMutex
-
-//Registry data structure
-//type ServiceRegistry map[string]map[string][]registry.Target
-
-type orderedServices []service
-
-func (s orderedServices) Len() int {
-	return len(s)
-}
-
-func (s orderedServices) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-func (s orderedServices) Less(i, j int) bool {
-	less := strings.Compare(s[i].Value, s[j].Value)
-	if less < 0 {
-		return true
-	} else {
-		return false
-	}
-}
-
-type orderedKeys []key
-
-func (s orderedKeys) Len() int {
-	return len(s)
-}
-
-func (s orderedKeys) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-func (s orderedKeys) Less(i, j int) bool {
-	less := strings.Compare(s[i].Value, s[j].Value)
-	if less < 0 {
-		return true
-	} else {
-		return false
-	}
-}
-
 type StandardRegistry struct {
 	lock     sync.RWMutex //Exclusive lock for registry data structure.
-	Services orderedServices
+	Services map[string]*service
 }
 
 type service struct {
 	Value string
-	Keys  orderedKeys
+	Keys  map[string]*key
 }
 
 type key struct {
 	Value              string
 	RoundRobbinCounter int
 	Targets            registry.OrderedTargets
+}
+
+//Retrieves a slice of addresses for specified service/version. If no address is found
+//ErrServiceNotFound is returned.
+func (r *StandardRegistry) Lookup(svcValue string, keyValue string) (registry.OrderedTargets, error) {
+	r.lock.RLock()
+	defer r.lock.RUnlock()
+	if svcValue == "reload" || svcValue == "status" {
+		return nil, registry.ErrServiceNameNotAllowed
+	}
+	if keyValue == "reload" || keyValue == "status" {
+		return nil, registry.ErrServiceNameNotAllowed
+	}
+	s, ok := r.Services[svcValue]
+	if !ok {
+		return nil, registry.ErrServiceNotFound
+	}
+	k, ok := s.Keys[keyValue]
+	if !ok {
+		return nil, registry.ErrServiceNotFound
+	}
+	return k.Targets, nil
+}
+
+//Adds an entry to the registry. If the address for an entry exists it will be duplicated.
+//If the service does not exist a new map[string][]string will be created and added to represent
+//the new service. If necessary registry.Lookup can be used to ensure success.
+func (r *StandardRegistry) Add(svcValue string, keyValue string, t registry.Target) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	if svcValue == "reload" || svcValue == "status" {
+		return
+	}
+	if keyValue == "reload" || keyValue == "status" {
+		return
+	}
+	if r.Services == nil {
+		r.Services = make(map[string]*service)
+	}
+	_, ok := r.Services[svcValue]
+	if !ok {
+		r.Services[svcValue] = &service{Value: svcValue}
+	}
+	if r.Services[svcValue].Keys == nil {
+		r.Services[svcValue].Keys = make(map[string]*key)
+	}
+	_, ok = r.Services[svcValue].Keys[keyValue]
+	if !ok {
+		r.Services[svcValue].Keys[keyValue] = &key{Value: keyValue, RoundRobbinCounter: 0}
+		//r.Services[svc].Keys[key].Targets = append(registry.OrderedTargets)
+	}
+	r.Services[svcValue].Keys[keyValue].Targets = append(r.Services[svcValue].Keys[keyValue].Targets, t)
+}
+
+//Removes an address entry for a given service/version entry. If necessary the
+//registry.Lookup function can be used to ensure success.
+func (r *StandardRegistry) Delete(svcValue string, keyValue string, t registry.Target) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	if r.Services == nil {
+		return
+	}
+	_, ok := r.Services[svcValue]
+	if !ok {
+		return
+	}
+	if r.Services[svcValue].Keys == nil {
+		return
+	}
+	_, ok = r.Services[svcValue].Keys[keyValue]
+	if !ok {
+		return
+	}
+	if r.Services[svcValue].Keys[keyValue].Targets == nil {
+		return
+	}
+	targetIndex := indexOf(len(r.Services[svcValue].Keys[keyValue].Targets), func(i int) bool { return r.Services[svcValue].Keys[keyValue].Targets[i].Address == t.Address })
+	if targetIndex < 0 {
+		return
+	}
+	r.Services[svcValue].Keys[keyValue].Targets = append(r.Services[svcValue].Keys[keyValue].Targets[:targetIndex], r.Services[svcValue].Keys[keyValue].Targets[targetIndex+1:]...)
+}
+
+func (r *StandardRegistry) IncrementFailures(svcValue string, keyValue string, t registry.Target, amount int) (int, error) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	_, ok := r.Services[svcValue]
+	if !ok {
+		return 0, registry.ErrServiceNotFound
+	}
+	_, ok = r.Services[svcValue].Keys[keyValue]
+	if !ok {
+		return 0, registry.ErrServiceNotFound
+	}
+	targetIndex := indexOf(len(r.Services[svcValue].Keys[keyValue].Targets), func(i int) bool { return r.Services[svcValue].Keys[keyValue].Targets[i].Address == t.Address })
+	if targetIndex < 0 {
+		return 0, registry.ErrServiceNotFound
+	}
+	r.Services[svcValue].Keys[keyValue].Targets[targetIndex].Failures += amount
+	return r.Services[svcValue].Keys[keyValue].Targets[targetIndex].Failures, nil
+}
+
+func (r *StandardRegistry) SetRoundRobbinCounter(svcValue string, keyValue string, value int) (int, error) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	_, ok := r.Services[svcValue]
+	if !ok {
+		return 0, registry.ErrServiceNotFound
+	}
+	_, ok = r.Services[svcValue].Keys[keyValue]
+	if !ok {
+		return 0, registry.ErrServiceNotFound
+	}
+	r.Services[svcValue].Keys[keyValue].RoundRobbinCounter = value
+	return r.Services[svcValue].Keys[keyValue].RoundRobbinCounter, nil
+}
+
+func (r *StandardRegistry) GetRoundRobbinCounter(svcValue string, keyValue string) (int, error) {
+	r.lock.RLock()
+	defer r.lock.RUnlock()
+	_, ok := r.Services[svcValue]
+	if !ok {
+		return 0, registry.ErrServiceNotFound
+	}
+	_, ok = r.Services[svcValue].Keys[keyValue]
+	if !ok {
+		return 0, registry.ErrServiceNotFound
+	}
+	return r.Services[svcValue].Keys[keyValue].RoundRobbinCounter, nil
 }
 
 func indexOf(length int, predicate func(i int) bool) int {
@@ -73,127 +157,4 @@ func indexOf(length int, predicate func(i int) bool) int {
 		}
 	}
 	return -1
-}
-
-//Retrieves a slice of addresses for specified service/version. If no address is found
-//ErrServiceNotFound is returned.
-func (r *StandardRegistry) Lookup(svc, key string) (registry.OrderedTargets, error) {
-	r.lock.RLock()
-	defer r.lock.RUnlock()
-	serviceIndex := indexOf(len(r.Services), func(i int) bool { return r.Services[i].Value == svc })
-	if serviceIndex == -1 {
-		return nil, registry.ErrServiceNotFound
-	}
-	keyIndex := indexOf(len(r.Services[serviceIndex].Keys), func(i int) bool { return r.Services[serviceIndex].Keys[i].Value == key })
-	if keyIndex == -1 {
-		return nil, registry.ErrServiceNotFound
-	}
-	return r.Services[serviceIndex].Keys[keyIndex].Targets, nil
-}
-
-//Adds an entry to the registry. If the address for an entry exists it will be duplicated.
-//If the service does not exist a new map[string][]string will be created and added to represent
-//the new service. If necessary registry.Lookup can be used to ensure success.
-func (r *StandardRegistry) Add(svc string, key string, t registry.Target) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	serviceIndex := indexOf(len(r.Services), func(i int) bool { return r.Services[i].Value == svc })
-	if serviceIndex == -1 {
-		r.Services = append(r.Services, service{Value: svc})
-		sort.Sort(r.Services)
-	}
-	keyIndex := indexOf(len(r.Services[serviceIndex].Keys), func(i int) bool { return r.Services[serviceIndex].Keys[i].Value == key })
-	if keyIndex == -1 {
-		r.Services[serviceIndex].Keys = append(r.Services[serviceIndex].Keys, key{Value: key})
-		sort.Sort(r.Services[serviceIndex].Keys)
-	}
-	targetIndex := indexOf(len(r.Services[serviceIndex].Keys), func(i int) bool { return r.Services[serviceIndex].Keys[keyIndex].Targets[i].Address == t.Address })
-	if targetIndex == -1 {
-		r.Services[serviceIndex].Keys[keyIndex].Targets = append(r.Services[serviceIndex].Keys[keyIndex].Targets, t)
-		sort.Sort(r.Services[serviceIndex].Keys[keyIndex].Targets)
-	}
-}
-
-//Removes an address entry for a given service/version entry. If necessary the
-//registry.Lookup function can be used to ensure success.
-func (r *StandardRegistry) Delete(svc string, key string, t registry.Target) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	serviceIndex := indexOf(len(r.Services), func(i int) bool { return r.Services[i].Value == svc })
-	if serviceIndex != -1 {
-		r.Services = append(r.Services[:serviceIndex], r.Services[serviceIndex+1:]...)
-	}
-	keyIndex := indexOf(len(r.Services[serviceIndex].Keys), func(i int) bool { return r.Services[serviceIndex].Keys[i].Value == key })
-	if keyIndex != -1 {
-		r.Services[serviceIndex].Keys = append(r.Services[serviceIndex].Keys[:keyIndex], r.Services[serviceIndex].Keys[keyIndex+1:]...)
-	}
-	targetIndex := indexOf(len(r.Services[serviceIndex].Keys), func(i int) bool { return r.Services[serviceIndex].Keys[keyIndex].Targets[i].Address == t.Address })
-	if targetIndex != -1 {
-		r.Services[serviceIndex].Keys[keyIndex].Targets = append(r.Services[serviceIndex].Keys[keyIndex].Targets[:targetIndex], r.Services[serviceIndex].Keys[keyIndex].Targets[targetIndex+1:]...)
-	}
-}
-
-//Ensures registry adheres to the restrictions set forth by the registry definition. Currently
-//ensures glb keywords are not used in the service/version combination. If this constraint is
-//violated ErrServiceNameNotAllowed is returned.
-func (r *StandardRegistry) Validate() error {
-	r.lock.RLock()
-	defer r.lock.RUnlock()
-	var protectedWords []string = []string{"status", "reload"}
-	for _, disallowed := range protectedWords {
-		serviceIndex := indexOf(len(r.Services), func(i int) bool { return r.Services[i].Value == disallowed })
-		keyIndex := indexOf(len(r.Services[serviceIndex].Keys), func(i int) bool { return r.Services[serviceIndex].Keys[i].Value == disallowed })
-		if serviceIndex != -1 || keyIndex != -1 {
-			return registry.ErrServiceNameNotAllowed
-		}
-	}
-	return nil
-}
-
-func (r *StandardRegistry) IncrementFailures(svc string, key string, t registry.Target, amount int) (int, error) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	serviceIndex := indexOf(len(r.Services), func(i int) bool { return r.Services[i].Value == svc })
-	if serviceIndex == -1 {
-		return -1, registry.ErrServiceNotFound
-	}
-	keyIndex := indexOf(len(r.Services[serviceIndex].Keys), func(i int) bool { return r.Services[serviceIndex].Keys[i].Value == key })
-	if keyIndex == -1 {
-		return -1, registry.ErrServiceNotFound
-	}
-	targetIndex := indexOf(len(r.Services[serviceIndex].Keys), func(i int) bool { return r.Services[serviceIndex].Keys[keyIndex].Targets[i].Address == t.Address })
-	if targetIndex == -1 {
-		return -1, registry.ErrServiceNotFound
-	}
-	r.Services[serviceIndex].Keys[keyIndex].Targets[targetIndex].Failures += amount
-	return r.Services[serviceIndex].Keys[keyIndex].Targets[targetIndex].Failures, nil
-}
-
-func (r *StandardRegistry) SetRoundRobbinCounter(svc string, key string, value int) (int, error) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	serviceIndex := indexOf(len(r.Services), func(i int) bool { return r.Services[i].Value == svc })
-	if serviceIndex == -1 {
-		return -1, registry.ErrServiceNotFound
-	}
-	keyIndex := indexOf(len(r.Services[serviceIndex].Keys), func(i int) bool { return r.Services[serviceIndex].Keys[i].Value == key })
-	if keyIndex == -1 {
-		return -1, registry.ErrServiceNotFound
-	}
-	r.Services[serviceIndex].Keys[keyIndex].RoundRobbinCounter = value
-	return r.Services[serviceIndex].Keys[keyIndex].RoundRobbinCounter, nil
-}
-
-func (r *StandardRegistry) GetRoundRobbinCounter(svc string, key string) (int, error) {
-	r.lock.RLock()
-	defer r.lock.RUnlock()
-	serviceIndex := indexOf(len(r.Services), func(i int) bool { return r.Services[i].Value == svc })
-	if serviceIndex == -1 {
-		return -1, registry.ErrServiceNotFound
-	}
-	keyIndex := indexOf(len(r.Services[serviceIndex].Keys), func(i int) bool { return r.Services[serviceIndex].Keys[i].Value == key })
-	if keyIndex == -1 {
-		return -1, registry.ErrServiceNotFound
-	}
-	return r.Services[serviceIndex].Keys[keyIndex].RoundRobbinCounter, nil
 }

@@ -10,11 +10,10 @@ var (
 )
 
 type Registry interface {
-	Add(svc string, key string, t Target)           //Adds an entry to registry.
-	Delete(svc string, key string, t Target)        //Removes an entry from the registry.
-	Lookup(svc, key string) (OrderedTargets, error) //Retrieves a slice of addresses for specified service/version.
-	Validate() error                                //Ensures no services contain a reserved word.
-	IncrementFailures(svc string, key string, t Target, amount int) (int, error)
-	SetRoundRobbinCounter(svc string, key string, value int) (int, error)
-	GetRoundRobbinCounter(svc string, key string) (int, error)
+	Add(svcValue string, keyValue string, t Target)           //Adds an entry to registry.
+	Delete(svcValue string, keyValue string, t Target)        //Removes an entry from the registry.
+	Lookup(svcValue string, keyValue string) (OrderedTargets, error) //Retrieves a slice of addresses for specified service/version.
+	IncrementFailures(svcValue string, keyValue string, t Target, amount int) (int, error)
+	SetRoundRobbinCounter(svcValue string, keyValue string, value int) (int, error)
+	GetRoundRobbinCounter(svcValue string, keyValue string) (int, error)
 }

@@ -1,1 +1,1 @@
-package registry
+package registry_test
