@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"bytes"
@@ -8,7 +8,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"os"
 )
 
 var (
@@ -38,7 +37,7 @@ func ReadParseConfig(configFile string, r registry.Registry) (ProxyConfig, error
 	data, err := readConfig(configFile)
 	if err != nil {
 		log.Print(err)
-		os.Exit(-1)
+		//os.Exit(-1)
 	}
 	config, err := parseConfig(bytes.NewReader(data))
 	if err != nil {

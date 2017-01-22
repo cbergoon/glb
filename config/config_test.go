@@ -1,16 +1,18 @@
-package main
+package config_test
 
 import (
 	"bufio"
 	"os"
 	"testing"
+	"github.com/cbergoon/glb/registry/standardregistry"
+	"github.com/cbergoon/glb/config"
 )
 
 const (
 	fileNameErr   = "file-error.json"
 	fileNameNoErr = "file-no-error.json"
 	fileErr       = "{\r\n  \"Basic\": false\r\n  \"DisableKeepAlives\": false,\r\n  \"IdleConnTimeoutSeconds\": 10,\r\n  \"Host\": {\r\n    \"Addr\": \"localhost\",\r\n    \"Port\": \":9090\",\r\n    \"SslPort\": \":8443\"\r\n  },\r\n  \"Registry\": {\r\n    \"s1\": {\r\n      \"v1\": [\r\n        \"localhost:8080\",\r\n        \"localhost:8081\"\r\n      ]\r\n    }\r\n  }\r\n}"
-	fileNoErr     = "{\r\n  \"Basic\": false,\r\n  \"DisableKeepAlives\": false,\r\n  \"IdleConnTimeoutSeconds\": 10,\r\n  \"Host\": {\r\n    \"Addr\": \"localhost\",\r\n    \"Port\": \":9090\",\r\n    \"SslPort\": \":8443\"\r\n  },\r\n  \"Registry\": {\r\n    \"s1\": {\r\n      \"v1\": [\r\n        \"localhost:8080\",\r\n        \"localhost:8081\"\r\n      ]\r\n    }\r\n  }\r\n}"
+	fileNoErr     = "{\r\n  \"Basic\": false,\r\n  \"DisableKeepAlives\": false,\r\n  \"IdleConnTimeoutSeconds\": 10,\r\n  \"Host\": {\r\n    \"Addr\": \"localhost\",\r\n    \"Port\": \":9090\",\r\n    \"SslPort\": \":8443\"\r\n  },\r\n  \"Registry\": {\r\n    \"s1\": {\r\n      \"v1\": [\r\n        {\"Address\": \"localhost:8080\"},\r\n        {\"Address\": \"localhost:8080\"}\r\n      ]\r\n    }\r\n  }\r\n}"
 )
 
 func buildFiles() error {
@@ -45,16 +47,17 @@ func cleanUp() error {
 }
 
 func TestReadParseConfig(t *testing.T) {
+	var serviceRegistry *serviceregistry.StandardRegistry = &serviceregistry.StandardRegistry{}
 	err := buildFiles()
 	if err != nil {
 		t.Error("Could not build files got ", err)
 	}
-	_, err = ReadParseConfig(fileNameErr)
+	_, err = config.ReadParseConfig(fileNameErr, serviceRegistry)
 	if err == nil {
 		t.Error("Expected not nil error got ", err)
 		return
 	}
-	proxyConfig, err := ReadParseConfig(fileNameNoErr)
+	proxyConfig, err := config.ReadParseConfig(fileNameNoErr, serviceRegistry)
 	if err != nil {
 		t.Error("Expected nil error got ", err)
 		return
@@ -83,7 +86,7 @@ func TestReadParseConfig(t *testing.T) {
 		t.Error("Proxy config not built properly got ", proxyConfig)
 		return
 	}
-	addrs, err := proxyConfig.Registry.Lookup("s1", "v1")
+	addrs, err := serviceRegistry.Lookup("s1", "v1")
 	if err != nil {
 		t.Error("Expected not nil error got ", err)
 	}
