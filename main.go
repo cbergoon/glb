@@ -7,6 +7,7 @@ import (
 
 	"os"
 
+	"github.com/cbergoon/glb/config"
 	"github.com/cbergoon/glb/proxy"
 	"github.com/cbergoon/glb/registry/standardregistry"
 )
@@ -40,7 +41,7 @@ func runLoadBalancer(addr, port, sslPort string) {
 		fmt.Fprintf(w, "%v\n", *serviceRegistry)
 	})
 	http.HandleFunc("/reload", func(w http.ResponseWriter, req *http.Request) {
-		config, err := ReadParseConfig(CONFIG_FILE, serviceRegistry)
+		config, err := config.ReadParseConfig(CONFIG_FILE, serviceRegistry)
 		if err != nil {
 			log.Print(err)
 			os.Exit(-1)
@@ -65,7 +66,7 @@ func runLoadBalancer(addr, port, sslPort string) {
 //Application entry point gets configuration and starts the load balancer.
 func main() {
 	//Configure
-	config, err := ReadParseConfig(CONFIG_FILE, serviceRegistry)
+	config, err := config.ReadParseConfig(CONFIG_FILE, serviceRegistry)
 	if err != nil {
 		log.Print(err)
 		os.Exit(-1)
