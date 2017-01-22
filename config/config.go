@@ -30,9 +30,9 @@ type Provider struct {
 }
 
 //Reads the json configuration file, parses the contents into the configuration
-//object "ProxyConfig" and, returns the resulting configuration structure. Returns
-//ErrFailedToParse if the JSON could not be marshaled, exits if the file does not
-//exist.
+//object "ProxyConfig" and, returns the resulting configuration structure. Populates
+//registry argument with configuration specification. Returns ErrFailedToParse if
+//the JSON could not be marshaled, exits if the file does not exist.
 func ReadParseConfig(configFile string, r registry.Registry) (ProxyConfig, error) {
 	data, err := readConfig(configFile)
 	if err != nil {

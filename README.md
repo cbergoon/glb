@@ -47,17 +47,13 @@ by a map of maps whose values are a slice of strings representing the addresses.
 strings of the service and version. 
 
 #### Operation and Functionality
-The load balancer mechanism's behavior will changee based on the connection settings in the config. 
+The load balancer mechanism's behavior will change based on the connection settings in the config. 
 For the most part the operation is consistent with what is expected of a round robin balancer with 
 the exception a high or unlimited IdleConnTimeoutSeconds value. If the timeout is unlimited then the 
 dial will only be called as the Go HTTP package sees necessary (until the connection pool is full). 
 This is because the balancing logic is contained within the dial function. 
 
-The registry object is keyed by the service name first, then the service version and, the a list of 
-arrayss containing the addresses of the appropriate service/verison mapping. No guarentee is made of
-the ordering of the proxy target addresses.
-
-The registry can be overridden with a struct that implements Registry.
+The registry can be overridden with a structure that implements Registry.
 
 #### To Do List
 1. Multiplier on round robin counter threshold

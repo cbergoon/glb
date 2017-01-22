@@ -21,7 +21,7 @@ type key struct {
 	Targets            registry.OrderedTargets
 }
 
-//Retrieves a slice of addresses for specified service/version. If no address is found
+//Retrieves a slice of targets for specified service/key. If no address is found
 //ErrServiceNotFound is returned.
 func (r *StandardRegistry) Lookup(svcValue string, keyValue string) (registry.OrderedTargets, error) {
 	r.lock.RLock()
@@ -44,7 +44,7 @@ func (r *StandardRegistry) Lookup(svcValue string, keyValue string) (registry.Or
 }
 
 //Adds an entry to the registry. If the address for an entry exists it will be duplicated.
-//If the service does not exist a new map[string][]string will be created and added to represent
+//If the service does not exist a new key and target will be created and added to represent
 //the new service. If necessary registry.Lookup can be used to ensure success.
 func (r *StandardRegistry) Add(svcValue string, keyValue string, t registry.Target) {
 	r.lock.Lock()
@@ -73,7 +73,7 @@ func (r *StandardRegistry) Add(svcValue string, keyValue string, t registry.Targ
 	r.Services[svcValue].Keys[keyValue].Targets = append(r.Services[svcValue].Keys[keyValue].Targets, t)
 }
 
-//Removes an address entry for a given service/version entry. If necessary the
+//Removes an address entry for a given service/key entry. If necessary the
 //registry.Lookup function can be used to ensure success.
 func (r *StandardRegistry) Delete(svcValue string, keyValue string, t registry.Target) {
 	r.lock.Lock()
@@ -101,7 +101,7 @@ func (r *StandardRegistry) Delete(svcValue string, keyValue string, t registry.T
 	}
 	r.Services[svcValue].Keys[keyValue].Targets = append(r.Services[svcValue].Keys[keyValue].Targets[:targetIndex], r.Services[svcValue].Keys[keyValue].Targets[targetIndex+1:]...)
 }
-
+//Increment failure counter on target. If target is not found ErrServiceNotFound is returned.
 func (r *StandardRegistry) IncrementFailures(svcValue string, keyValue string, t registry.Target, amount int) (int, error) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
@@ -121,6 +121,7 @@ func (r *StandardRegistry) IncrementFailures(svcValue string, keyValue string, t
 	return r.Services[svcValue].Keys[keyValue].Targets[targetIndex].Failures, nil
 }
 
+//Set round robbin counter on key. If key is not found ErrServiceNotFound is returned.
 func (r *StandardRegistry) SetRoundRobbinCounter(svcValue string, keyValue string, value int) (int, error) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
@@ -136,6 +137,7 @@ func (r *StandardRegistry) SetRoundRobbinCounter(svcValue string, keyValue strin
 	return r.Services[svcValue].Keys[keyValue].RoundRobbinCounter, nil
 }
 
+//Get round robbin counter on key. If key is not found ErrServiceNotFound is returned.
 func (r *StandardRegistry) GetRoundRobbinCounter(svcValue string, keyValue string) (int, error) {
 	r.lock.RLock()
 	defer r.lock.RUnlock()

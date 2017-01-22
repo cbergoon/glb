@@ -19,9 +19,9 @@ const (
 )
 
 var serviceRegistry *serviceregistry.StandardRegistry = &serviceregistry.StandardRegistry{} //Service registry to store service-address mappings.
-var BasicProxy bool = false                                                         //Enable single service "default" service/version. Removes requirement of service/version in URL.
-var IdleConnTimeoutSeconds int = 1                                                  //Duration the transport should keep connections alive. Zero imposes no limit.
-var DisableKeepAlives bool = false                                                  //Do not keep alive, reconnect on each request.
+var BasicProxy bool = false                                                                 //Enable single service "default" service/version. Removes requirement of service/version in URL.
+var IdleConnTimeoutSeconds int = 1                                                          //Duration the transport should keep connections alive. Zero imposes no limit.
+var DisableKeepAlives bool = false                                                          //Do not keep alive, reconnect on each request.
 
 //Starts load balancer, redirect for HTTPS and, service endpoints.
 func runLoadBalancer(addr, port, sslPort string) {

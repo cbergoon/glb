@@ -2,23 +2,11 @@ package proxy_test
 
 import (
 	"github.com/cbergoon/glb/proxy"
-	"github.com/cbergoon/glb/registry"
+	"github.com/cbergoon/glb/registry/standardregistry"
 	"testing"
 )
 
-var serviceRegistry = registry.ServiceRegistry{
-	"service1": {
-		"v1": {
-			"localhost:8888",
-		},
-	},
-	"service2": {
-		"v2": {
-			"localhost:7777",
-			"localhost:6666",
-		},
-	},
-}
+var serviceRegistry = serviceregistry.StandardRegistry{}
 
 func TestNewLoadBalanceHostReverseProxy(t *testing.T) {
 	var FALSE = false
