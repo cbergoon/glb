@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	ErrServiceNotFound       = errors.New("registry: target name/version not found")
+	ErrServiceNotFound       = errors.New("registry: target name/key not found")
 	ErrServiceNameNotAllowed = errors.New("registry: service name not allowed; non-allowable service names [reload|status]")
 )
 
