@@ -19,8 +19,8 @@ Document structure is defined in the `glb.schema.json` file. Below is a sample c
   "Registry": {
     "s1": {
       "v1": [
-        "localhost:8080",
-        "localhost:8081"
+        {"Address": "localhost:8080"},
+        {"Address": "localhost:8080"}
       ]
     }
   }
@@ -55,7 +55,7 @@ This is because the balancing logic is contained within the dial function.
 
 The registry can be overridden with a structure that implements Registry.
 
-#### To Do List
+#### Todo List
 1. Multiplier on round robin counter threshold
 2. Service endpoint operations
 3. Endpoints for managing the registry

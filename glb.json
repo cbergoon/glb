@@ -1,7 +1,7 @@
 {
   "Basic": false,
-  "DisableKeepAlives": false,
-  "IdleConnTimeoutSeconds": 10,
+  "DisableKeepAlives": true,
+  "IdleConnTimeoutSeconds": 0,
   "Host": {
     "Addr": "localhost",
     "Port": ":9090",
@@ -10,8 +10,8 @@
   "Registry": {
     "s1": {
       "v1": [
-        "localhost:8080",
-        "localhost:8081"
+        {"Address": "localhost:8080"},
+        {"Address": "localhost:8081"}
       ]
     }
   }
